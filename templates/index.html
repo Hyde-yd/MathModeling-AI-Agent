@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数学建模竞赛总调度智能体</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部导航 -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">🧮</span>
+                    <h1>数学建模竞赛总调度智能体</h1>
+                </div>
+                <div class="header-tags">
+                    <span class="tag deepseek">DeepSeek</span>
+                    <span class="tag dual">双Agent协同</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- 左侧：输入面板 -->
+            <section class="panel input-panel">
+                <div class="panel-header">
+                    <h2>📋 赛题输入</h2>
+                    <span class="step-badge">Step 1</span>
+                </div>
+                
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label for="problemFileUpload">
+                            📄 上传赛题文件
+                            <span class="required">*</span>
+                            <span class="hint">（支持 .txt .md .docx .pdf .doc）</span>
+                        </label>
+                        <div class="upload-zone" id="problemUploadZone">
+                            <input 
+                                type="file" 
+                                id="problemFileUpload" 
+                                accept=".txt,.md,.docx,.pdf,.doc"
+                            >
+                            <div class="upload-placeholder">
+                                <span class="upload-icon">📄</span>
+                                <p>拖拽赛题文件到此处或点击上传</p>
+                                <p class="upload-hint">仅支持上传一个赛题文件（txt/md/docx/pdf）</p>
+                            </div>
+                            <div class="file-list" id="problemFileList"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dataFileUpload">
+                            📎 附件数据上传
+                            <span class="hint">（支持 .xlsx .csv .json 等数据文件）</span>
+                        </label>
+                        <div class="upload-zone" id="dataUploadZone">
+                            <input 
+                                type="file" 
+                                id="dataFileUpload" 
+                                multiple 
+                                accept=".xlsx,.xls,.csv,.json"
+                            >
+                            <div class="upload-placeholder">
+                                <span class="upload-icon">📁</span>
+                                <p>拖拽数据文件到此处或点击上传</p>
+                                <p class="upload-hint">支持Excel、CSV、JSON等附件数据</p>
+                            </div>
+                            <div class="file-list" id="dataFileList"></div>
+                        </div>
+                    </div>
+
+                    <button class="btn-primary" id="submitBtn" disabled>
+                        <span class="btn-icon">🚀</span>
+                        启动智能体分析
+                    </button>
+
+                    <div class="config-status" id="configStatus">
+                        <span class="status-dot"></span>
+                        <span class="status-text">检查API配置中...</span>
+                    </div>
+
+                    <!-- 训练知识库 -->
+                    <div class="training-section">
+                        <div class="training-header" id="trainingToggle">
+                            <span>🎓 训练知识库</span>
+                            <span class="training-toggle-icon">▶</span>
+                            <span class="training-stats" id="trainingStats"></span>
+                        </div>
+                        <div class="training-body" id="trainingBody" style="display:none;">
+                            <div class="training-categories">
+                                <button class="training-cat-btn active" data-cat="frameworks">📐 论文框架</button>
+                                <button class="training-cat-btn" data-cat="papers">📖 优秀论文</button>
+                                <button class="training-cat-btn" data-cat="codes">💻 参考代码</button>
+                            </div>
+                            <div class="training-upload-row">
+                                <input type="file" id="trainingFileInput" accept=".txt,.md,.pdf,.py" hidden>
+                                <button class="btn-small" id="trainingUploadBtn" title="上传训练数据">+ 上传</button>
+                                <span class="training-hint" id="trainingUploadHint"></span>
+                            </div>
+                            <div class="training-file-list" id="trainingFileList"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 右侧：结果面板 -->
+            <section class="panel result-panel">
+                <div class="panel-header">
+                    <h2>📊 处理结果</h2>
+                    <span class="step-badge">Step 2</span>
+                </div>
+
+                <div class="panel-body">
+                    <!-- 进度显示 -->
+                    <div class="progress-section" id="progressSection" style="display:none;">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="progressBar"></div>
+                        </div>
+                        <div class="progress-stages">
+                            <div class="stage" data-stage="analysis">
+                                <span class="stage-icon">🔍</span>
+                                <span class="stage-label">Agent1 题目分析</span>
+                                <span class="stage-status" id="stageAnalysis">等待中</span>
+                            </div>
+                            <div class="stage-connector"></div>
+                            <div class="stage" data-stage="code">
+                                <span class="stage-icon">💻</span>
+                                <span class="stage-label">Agent2 代码生成</span>
+                                <span class="stage-status" id="stageCode">等待中</span>
+                            </div>
+                            <div class="stage-connector"></div>
+                            <div class="stage" data-stage="packaging">
+                                <span class="stage-icon">📦</span>
+                                <span class="stage-label">汇总打包</span>
+                                <span class="stage-status" id="stagePackaging">等待中</span>
+                            </div>
+                        </div>
+                        <div class="progress-message" id="progressMessage"></div>
+                    </div>
+
+                    <!-- 结果展示 -->
+                    <div class="result-section" id="resultSection" style="display:none;">
+                        <div class="result-tabs">
+                            <button class="tab-btn active" data-tab="analysis">📝 分析文档</button>
+                            <button class="tab-btn" data-tab="codes">💻 求解代码</button>
+                            <button class="tab-btn" data-tab="summary">📋 文件清单</button>
+                        </div>
+
+                        <div class="tab-content active" id="tabAnalysis">
+                            <div class="markdown-body" id="analysisContent"></div>
+                        </div>
+
+                        <div class="tab-content" id="tabCodes">
+                            <div class="code-tabs" id="codeTabs"></div>
+                            <div class="code-viewer" id="codeViewer">
+                                <div class="code-header">
+                                    <span class="code-filename" id="codeFilename"></span>
+                                    <button class="btn-copy" id="btnCopy">📋 复制</button>
+                                </div>
+                                <pre><code id="codeContent"></code></pre>
+                            </div>
+                        </div>
+
+                        <div class="tab-content" id="tabSummary">
+                            <div id="summaryContent"></div>
+                        </div>
+
+                        <div class="result-actions">
+                            <button class="btn-download" id="btnDownload">
+                                <span>⬇️</span> 下载全套成果 (ZIP)
+                            </button>
+                            <button class="btn-secondary" id="btnNewTask">
+                                <span>🔄</span> 新建任务
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 空状态 -->
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-icon">🧠</div>
+                        <h3>等待任务输入</h3>
+                        <p>请上传赛题文件，点击启动后<br>两大智能体将自动协同完成分析</p>
+                        <div class="agent-cards">
+                            <div class="agent-card">
+                                <div class="agent-num">1</div>
+                                <h4>题目分析与论文建模Agent</h4>
+                                <p>问题解读 · 思路梳理 · 框架搭建 · 文字撰写</p>
+                            </div>
+                            <div class="agent-card">
+                                <div class="agent-num">2</div>
+                                <h4>最优模型算法与代码生成Agent</h4>
+                                <p>模型优选 · 算法设计 · 代码编写 · 求解运算</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
