@@ -37,8 +37,7 @@ cp .env.example .env
 
 # 编辑 .env，填入你的 DeepSeek API Key
 DEEPSEEK_API_KEY=sk-your-api-key-here
-DEEPSEEK_MODEL=deepseek-chat   # Agent2 用
-# Agent1 固定使用 deepseek-reasoner 以获得更强的推理能力
+DEEPSEEK_MODEL=deepseek-v4-pro   # 默认，可更改为其他模型
 ```
 
 ### 3. 启动服务
