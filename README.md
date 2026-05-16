@@ -64,7 +64,7 @@ python app.py
 上传往年优秀论文、论文框架模板、参考代码，让 Agent1 模仿其风格与深度：
 
 - **论文框架**：`论文框架模板.md` → Agent1 会按此结构输出
-- **优秀论文**：往年国赛一等奖 PDF → Agent1 会模仿写作风格与推导深度
+- **优秀论文**：可添加往年国赛一等奖 PDF → Agent1 会模仿写作风格与推导深度
 - **参考代码**：规范 Python 代码 `.py` → Agent2 会模仿代码风格
 
 数据存储在 `training/` 目录下，首次读取后缓存，文件不变不重复读取。
@@ -99,8 +99,8 @@ jmandcode/
 
 - **后端**：Flask + SSE 实时进度推送
 - **AI 模型**：DeepSeek API（OpenAI 兼容）
-  - Agent1：`deepseek-reasoner`（推理模型）
-  - Agent2：`deepseek-chat`（可用 .env 配置）
+  - Agent1：`deepseek-v4-pro`（推理模型）
+  - Agent2：`deepseek-v4-pro`（可用 .env 配置）
 - **文件处理**：PyPDF2、python-docx、pandas
 
 ## 特性
