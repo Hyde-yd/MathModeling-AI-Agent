@@ -35,7 +35,7 @@ class Orchestrator:
         self.kb = None  # 懒加载，避免循环导入
     
     def run(self, problem_text: str, data_description: str = "",
-            progress_callback=None) -> dict:
+            progress_callback=None, output_dir: str = None) -> dict:
         """
         执行完整数模调度流程
         
@@ -43,6 +43,7 @@ class Orchestrator:
             problem_text: 赛题文本
             data_description: 附件数据说明
             progress_callback: 进度回调函数，接收 (stage, message)
+            output_dir: 输出目录路径（可选，不传则自动生成）
         
         Returns:
             dict: {
@@ -115,7 +116,7 @@ class Orchestrator:
             progress_callback("code_done", "Agent2 代码生成完成，正在打包输出文件...")
         
         # 阶段三：汇总输出
-        output_dir = self._save_outputs(results, problem_text)
+        output_dir = self._save_outputs(results, problem_text, output_dir)
         results['output_dir'] = output_dir
         
         if progress_callback:
@@ -169,15 +170,18 @@ class Orchestrator:
         
         return code_files
     
-    def _save_outputs(self, results: dict, problem_text: str) -> str:
+    def _save_outputs(self, results: dict, problem_text: str, output_dir: str = None) -> str:
         """保存所有输出文件到本地目录"""
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_dir = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "outputs",
-            f"mcm_solution_{timestamp}"
-        )
-        os.makedirs(output_dir, exist_ok=True)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        else:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_dir = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "outputs",
+                f"mcm_solution_{timestamp}"
+            )
+            os.makedirs(output_dir, exist_ok=True)
         
         with open(os.path.join(output_dir, "problem_analysis.md"), "w", encoding="utf-8") as f:
             f.write(results.get('analysis_doc', ''))

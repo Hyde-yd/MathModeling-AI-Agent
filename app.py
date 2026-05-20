@@ -40,6 +40,9 @@ os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 # 进度队列 - 用于SSE推送
 progress_queues = {}
 
+# 任务结果存储 - 按 task_id 索引，供轮询/下载端点查询
+task_results = {}
+
 
 @app.route('/')
 def index():
@@ -122,6 +125,8 @@ def _run_orchestration(task_id: str, problem_text: str, data_description: str):
         if q:
             q.put(json.dumps({"stage": stage, "message": message}))
     
+    output_dir = os.path.join(app.config['OUTPUT_FOLDER'], f"mcm_solution_{task_id}")
+    
     orchestrator = Orchestrator(
         api_key=os.getenv("DEEPSEEK_API_KEY"),
         base_url=os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
@@ -132,8 +137,15 @@ def _run_orchestration(task_id: str, problem_text: str, data_description: str):
         results = orchestrator.run(
             problem_text=problem_text,
             data_description=data_description,
-            progress_callback=progress_callback
+            progress_callback=progress_callback,
+            output_dir=output_dir
         )
+        task_results[task_id] = {
+            "analysis_doc": results.get("analysis_doc", ""),
+            "code_files": results.get("code_files", {}),
+            "output_dir": results.get("output_dir", ""),
+            "zip_path": results.get("zip_path", ""),
+        }
         if q:
             q.put(json.dumps({
                 "stage": "complete",
@@ -188,47 +200,26 @@ def get_progress(task_id):
 @app.route('/api/download/<task_id>')
 def download_result(task_id):
     """下载结果zip包"""
-    outputs_dir = app.config['OUTPUT_FOLDER']
-    for item in os.listdir(outputs_dir):
-        if item.startswith(f"mcm_solution_") and item.endswith(".zip"):
-            zip_path = os.path.join(outputs_dir, item)
-            if os.path.exists(zip_path):
-                return send_file(
-                    zip_path,
-                    as_attachment=True,
-                    download_name=f"数模竞赛方案_{task_id}.zip"
-                )
-    
+    saved = task_results.get(task_id)
+    if saved and saved.get("zip_path") and os.path.exists(saved["zip_path"]):
+        return send_file(
+            saved["zip_path"],
+            as_attachment=True,
+            download_name=f"数模竞赛方案_{task_id}.zip"
+        )
     return jsonify({"error": "文件不存在或已过期"}), 404
 
 
 @app.route('/api/result/<task_id>')
 def get_result(task_id):
     """获取处理结果（不含文件下载）"""
-    outputs_dir = app.config['OUTPUT_FOLDER']
-    for item in os.listdir(outputs_dir):
-        folder_path = os.path.join(outputs_dir, item)
-        if item.startswith("mcm_solution_") and os.path.isdir(folder_path):
-            analysis_path = os.path.join(folder_path, "problem_analysis.md")
-            analysis_content = ""
-            if os.path.exists(analysis_path):
-                with open(analysis_path, "r", encoding="utf-8") as f:
-                    analysis_content = f.read()
-            
-            code_files = {}
-            for f in os.listdir(folder_path):
-                if f.endswith(".py"):
-                    with open(os.path.join(folder_path, f), "r", encoding="utf-8") as cf:
-                        code_files[f] = cf.read()
-            
-            zip_filename = f"数模竞赛方案_{task_id}.zip"
-            
-            return jsonify({
-                "analysis_doc": analysis_content,
-                "code_files": code_files,
-                "zip_filename": zip_filename,
-            })
-    
+    saved = task_results.get(task_id)
+    if saved:
+        return jsonify({
+            "analysis_doc": saved.get("analysis_doc", ""),
+            "code_files": saved.get("code_files", {}),
+            "zip_filename": f"数模竞赛方案_{task_id}.zip",
+        })
     return jsonify({"error": "结果不存在"}), 404
 
 
